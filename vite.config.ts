@@ -6,6 +6,15 @@
   export default defineConfig({
     plugins: [react()],
     assetsInclude: ['**/*.glb'],
+    server: {
+      port: 3000,
+      proxy: {
+        "/api": {
+          target: "http://localhost:4000",
+          changeOrigin: true,
+        },
+      },
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -54,9 +63,5 @@
     build: {
       target: 'esnext',
       outDir: 'build',
-    },
-    server: {
-      port: 3000,
-      open: true,
     },
   });

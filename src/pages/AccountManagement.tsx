@@ -94,6 +94,8 @@ export default function AccountManagement({ user, onLogin }: AccountManagementPr
     try {
       const res = await apiFetch<{ total: number; accounts: Account[] }>("/api/accounts?status=active&sort=-createdAt");
       setAccounts(res.accounts || []);
+      console.log("accounts sample:", (res.accounts || [])[0]);
+
     } catch (e: any) {
       setError(e?.message || "계정 목록 조회 실패");
       setAccounts([]);

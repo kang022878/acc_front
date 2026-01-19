@@ -50,25 +50,34 @@ export function buildCategoryDonuts(accounts: Account[]): CategoryDonut[] {
 }
 
 export function buildCleanupTop2(accounts: Account[]): CleanupItem[] {
-  // inactivityDays가 없을 수도 있으니 lastActivityDate/firstSeenDate로 계산
   const now = Date.now();
 
-  const withInactivity = accounts.map((a) => {
-    const base = a.lastActivityDate || a.firstSeenDate;
-    const days = Math.max(
-      0,
-      Math.floor((now - new Date(base).getTime()) / (1000 * 60 * 60 * 24))
-    );
-    return { ...a, _days: a.inactivityDays ?? days };
+  const toMs = (v?: string) => {
+    if (!v) return null;
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? t : null;
+  };
+
+  const withDays = accounts.map((a) => {
+    // ✅ Dashboard에서는 "오래된 흔적(첫 발견)"을 우선 기준으로
+    const baseMs = toMs(a.firstSeenDate) ?? toMs(a.lastActivityDate);
+
+    const days = baseMs == null
+      ? 0
+      : Math.max(0, Math.floor((now - baseMs) / (1000 * 60 * 60 * 24)));
+
+    return { ...a, _days: days };
   });
 
-  withInactivity.sort((a, b) => b._days - a._days);
+  // ✅ 오래된 순
+  withDays.sort((a, b) => b._days - a._days);
 
-  return withInactivity.slice(0, 2).map((a) => ({
+  return withDays.slice(0, 2).map((a) => ({
     id: a.id,
     serviceName: a.serviceName,
     serviceDomain: a.serviceDomain,
     inactivityDays: a._days,
-    label: `${a._days}일 미사용`,
+    label: `${a._days}일 전 첫 발견`, // ✅ 문구도 "미사용"이 아니라 "첫 발견"으로 맞추는 게 정확
   }));
 }
+

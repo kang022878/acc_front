@@ -1,75 +1,87 @@
-import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, User } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Bot, Send, User, Loader2 } from "lucide-react";
+import { apiFetch } from "../lib/api";
 
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'bot';
+  sender: "user" | "bot";
   timestamp: Date;
 }
+
+type ChatApiResponse = { reply: string };
 
 export default function SecurityChatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: '보안 지식을 챗봇에게 물어보세요.',
-      sender: 'bot',
+      text: "보안 지식을 챗봇에게 물어보세요.",
+      sender: "bot",
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const getBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('비밀번호') || lowerMessage.includes('패스워드')) {
-      return '안전한 비밀번호는 8자 이상, 대소문자, 숫자, 특수문자를 혼합하여 만드는 것이 좋습니다. 또한 같은 비밀번호를 여러 사이트에서 사용하지 마세요.';
-    }
-    if (lowerMessage.includes('개인정보') || lowerMessage.includes('유출')) {
-      return '개인정보 유출을 방지하려면: 1) 정기적으로 비밀번호 변경 2) 사용하지 않는 계정 삭제 3) 이중 인증 활성화 4) 의심스러운 링크 클릭 금지를 실천하세요.';
-    }
-    if (lowerMessage.includes('이중') || lowerMessage.includes('2fa') || lowerMessage.includes('인증')) {
-      return '이중 인증(2FA)은 비밀번호 외에 추가 인증 단계를 거치는 것입니다. SMS, 인증 앱, 생체인식 등을 통해 계정 보안을 크게 향상시킬 수 있습니다.';
-    }
-    if (lowerMessage.includes('피싱') || lowerMessage.includes('사기')) {
-      return '피싱 메일/문자 주의사항: 1) 발신자 주소 확인 2) 첨부파일 함부로 열지 않기 3) 개인정보 요구 시 의심 4) 공식 채널로 직접 확인하기';
-    }
-    
-    return '보안에 관한 질문을 주시면 최선을 다해 답변드리겠습니다. 비밀번호, 개인정보 보호, 이중인증, 피싱 등에 대해 물어보세요!';
-  };
-
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || sending) return;
 
     const userMessage: Message = {
       id: Date.now(),
-      text: input,
-      sender: 'user',
+      text,
+      sender: "user",
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setSending(true);
 
-    // Simulate bot response delay
-    setTimeout(() => {
+    try {
+      // 백엔드로 보낼 “대화 히스토리” 구성
+      const historyForApi = [...messages, userMessage].map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
+
+      const res = await apiFetch<ChatApiResponse>("/api/security-chat", {
+        method: "POST",
+        body: JSON.stringify({ messages: historyForApi }),
+      });
+
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: getBotResponse(input),
-        sender: 'bot',
+        text: res.reply,
+        sender: "bot",
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, botMessage]);
-    }, 500);
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (e: any) {
+      const errText =
+        e?.message ||
+        "지금은 답변을 가져오지 못했어요. (로그인/요금제/서버 상태 확인)";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          text: `⚠️ ${errText}`,
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -81,7 +93,7 @@ export default function SecurityChatbot() {
         </div>
         <div>
           <h3 className="font-bold">보안 어시스턴트</h3>
-          <p className="text-xs text-slate-400">온라인</p>
+          <p className="text-xs text-slate-400">{sending ? "답변 생성 중..." : "온라인"}</p>
         </div>
       </div>
 
@@ -90,36 +102,43 @@ export default function SecurityChatbot() {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex gap-3 ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}
+            className={`flex gap-3 ${message.sender === "user" ? "flex-row-reverse" : ""}`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              message.sender === 'bot' ? 'bg-blue-600' : 'bg-slate-700'
-            }`}>
-              {message.sender === 'bot' ? (
-                <Bot className="w-5 h-5" />
-              ) : (
-                <User className="w-5 h-5" />
-              )}
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                message.sender === "bot" ? "bg-blue-600" : "bg-slate-700"
+              }`}
+            >
+              {message.sender === "bot" ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
             </div>
-            <div className={`flex-1 ${message.sender === 'user' ? 'text-right' : ''}`}>
+            <div className={`flex-1 ${message.sender === "user" ? "text-right" : ""}`}>
               <div
                 className={`inline-block max-w-[85%] p-3 rounded-lg ${
-                  message.sender === 'bot'
-                    ? 'bg-slate-800 text-left'
-                    : 'bg-blue-600 text-right'
+                  message.sender === "bot" ? "bg-slate-800 text-left" : "bg-blue-600 text-right"
                 }`}
               >
                 <p className="text-sm leading-relaxed">{message.text}</p>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                {message.timestamp.toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {message.timestamp.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
           </div>
         ))}
+
+        {/* ✅ 로딩 스피너(너가 원한 “동그랗게 도는 표시”) */}
+        {sending && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-600">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div className="inline-flex items-center gap-2 bg-slate-800 p-3 rounded-lg">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm text-slate-200">생성 중...</span>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -129,16 +148,19 @@ export default function SecurityChatbot() {
           <input
             type="text"
             value={input}
+            disabled={sending}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="질문을 입력하세요..."
-            className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
           />
           <button
             onClick={handleSend}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+            disabled={sending}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-60"
+            title={sending ? "답변 생성 중..." : "전송"}
           >
-            <Send className="w-5 h-5" />
+            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
       </div>
