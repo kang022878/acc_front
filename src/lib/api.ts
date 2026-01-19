@@ -9,6 +9,10 @@ export function setToken(token: string) {
   localStorage.setItem("acc_token", token);
 }
 
+export function clearToken() {
+  localStorage.removeItem("acc_token");
+}
+
 export async function devLogin(email: string, name: string) {
   const res = await fetch(`${API_BASE}/api/auth/dev-login`, {
     method: "POST",

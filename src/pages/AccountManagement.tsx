@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import AccountList from "../components/AccountList";
 import { Search, RefreshCw, ShieldAlert, Link2 } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiFetch, devLogin } from "../lib/api";
+import type { Account } from "../lib/types";
+import { useNavigate } from "react-router-dom";
+
 
 /**
  * 백엔드 /api/gmail/scan 응답 형식
  */
+
 type ScanAccount = {
   id: string;
   serviceName: string;
@@ -37,11 +41,8 @@ type GmailStatusResponse =
     };
 
 interface AccountManagementProps {
-  user: {
-    name: string;
-    email: string;
-    profileImage: string | null;
-  };
+  user: { name: string; email: string; profileImage: string | null } | null;
+  onLogin: () => Promise<boolean>;
 }
 
 /** 카테고리 표시명 */
@@ -63,7 +64,7 @@ function sanitizeDomain(domain: string) {
   return domain.replace(/[<>"]/g, "").trim();
 }
 
-export default function AccountManagement({ user }: AccountManagementProps) {
+export default function AccountManagement({ user, onLogin }: AccountManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
 
@@ -73,11 +74,38 @@ export default function AccountManagement({ user }: AccountManagementProps) {
   const [statusLoading, setStatusLoading] = useState(false);
 
   // scan 결과
-  const [accounts, setAccounts] = useState<ScanAccount[]>([]);
+  // const [accounts, setAccounts] = useState<ScanAccount[]>([]);
+  // const [scanLoading, setScanLoading] = useState(false);
+  // const [scanError, setScanError] = useState("");
+
+  const categories = ["전체", "회원가입", "결제/영수증", "인증/보안", "기타"];
+
+  const navigate = useNavigate();
+
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState("");
 
-  const categories = ["전체", "회원가입", "결제/영수증", "인증/보안", "기타"];
+  const fetchAccounts = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiFetch<{ total: number; accounts: Account[] }>("/api/accounts?status=active&sort=-createdAt");
+      setAccounts(res.accounts || []);
+    } catch (e: any) {
+      setError(e?.message || "계정 목록 조회 실패");
+      setAccounts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Gmail status 확인 */
   const checkGmailStatus = async () => {
@@ -102,47 +130,54 @@ export default function AccountManagement({ user }: AccountManagementProps) {
   };
 
   /** Gmail 연결 시작 */
-  const connectGmail = async () => {
-    setScanError("");
-    try {
+    const connectGmail = async () => {
+      setScanError("");
+
+      if (!user) {
+        const ok = await onLogin();
+        if (!ok) return; // 로그인 취소됨
+      }
+
       const { authUrl } = await apiFetch<{ authUrl: string }>("/api/gmail/connect-url");
       window.location.href = authUrl;
-    } catch (e: any) {
-      setScanError(e?.message || "CONNECT 실패");
-    }
-  };
+    };
 
   /** RUN SCAN */
-  const runScan = async () => {
-    setScanLoading(true);
-    setScanError("");
-    try {
-      await apiFetch<ScanResponse>("/api/gmail/scan", { method: "POST" });
-      // ✅ 스캔 결과는 DB에 저장되므로, 저장된 목록을 다시 조회
-      await fetchAccounts();
-    } catch (e: any) {
-      setScanError(e.message || "스캔 실패");
-    } finally {
-      setScanLoading(false);
-    }
-  };
+    const runScan = async () => {
+      if (!user) {
+        setScanError("로그인이 필요해요. 먼저 로그인해주세요.");
+        return;
+      }
 
-    const fetchAccounts = async () => {
-    setScanLoading(true);      // 로딩 표시 재사용
-    setScanError("");
-    try {
-      const data = await apiFetch<AccountsResponse>("/api/accounts?status=active&sort=-createdAt");
-      const cleaned = (data.accounts || []).map((a) => ({
-        ...a,
-        serviceDomain: sanitizeDomain(a.serviceDomain),
-      }));
-      setAccounts(cleaned);
-    } catch (e: any) {
-      setScanError(e.message || "계정 목록 조회 실패");
-    } finally {
-      setScanLoading(false);
-    }
-  };
+      setScanLoading(true);
+      setScanError("");
+      try {
+        await apiFetch("/api/gmail/scan", { method: "POST" });
+        await fetchAccounts();
+      } catch (e: any) {
+        setScanError(e?.message || "스캔 실패");
+      } finally {
+        setScanLoading(false);
+      }
+    };
+
+
+  //   const fetchAccounts = async () => {
+  //   setScanLoading(true);      // 로딩 표시 재사용
+  //   setScanError("");
+  //   try {
+  //     const data = await apiFetch<AccountsResponse>("/api/accounts?status=active&sort=-createdAt");
+  //     const cleaned = (data.accounts || []).map((a) => ({
+  //       ...a,
+  //       serviceDomain: sanitizeDomain(a.serviceDomain),
+  //     }));
+  //     setAccounts(cleaned);
+  //   } catch (e: any) {
+  //     setScanError(e.message || "계정 목록 조회 실패");
+  //   } finally {
+  //     setScanLoading(false);
+  //   }
+  // };
 
   /** 페이지 진입 시: status 확인 */
   useEffect(() => {
@@ -181,7 +216,7 @@ export default function AccountManagement({ user }: AccountManagementProps) {
         <div className="mb-8 flex flex-col gap-4">
           <div>
             <h1 className="text-4xl font-bold mb-2">계정 정리</h1>
-            <p className="text-blue-400 text-lg">Gmail을 분석하여 {user.name}님의 계정 후보를 찾아요.</p>
+            <p className="text-blue-400 text-lg"> Gmail을 분석하여 {user ? `${user.name}님` : "게스트님"}의 계정 후보를 찾아요. </p>
           </div>
 
           {/* HUD */}
