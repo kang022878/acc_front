@@ -1,36 +1,52 @@
-import { AlertTriangle } from 'lucide-react';
-import DonutChart from './DonutChart';
+// src/components/CleanupSuggestions.tsx
+import type { CleanupItem } from "../lib/accountInsights";
+import DonutChart from "./DonutChart";
 
-export default function CleanupSuggestions() {
-  const oldAccounts = [
-    { name: '쿠팡', daysSinceActive: 314, category: '쇼핑' },
-    { name: '옥션', daysSinceActive: 578, category: '쇼핑' },
-  ];
+export default function CleanupSuggestions({
+  items,
+  total,
+}: {
+  items: CleanupItem[];
+  total: number;
+}) {
+  const percent = total ? Math.min(100, Math.round((items.length / total) * 100)) : 0;
 
   return (
-    <div className="bg-slate-900/50 border border-yellow-500/30 rounded-lg p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <AlertTriangle className="w-6 h-6 text-yellow-400" />
-        <h3 className="text-xl font-bold text-yellow-400">지금 정리하세요</h3>
+    <div className="bg-slate-900/50 border border-cyan-400/25 rounded-lg p-6 backdrop-blur-sm
+                    shadow-[0_0_40px_rgba(34,211,238,0.10)]">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold text-slate-100">
+          ⚠️ 지금 정리하세요
+        </h3>
+        <DonutChart percent={percent} label="priority" />
       </div>
 
-      <p className="text-slate-400 mb-6 text-sm">
-        오랫동안 사용하지 않은 계정이 개인정보 유출의 위험이 될 수 있습니다.
-      </p>
-
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        {oldAccounts.map((account) => (
-          <DonutChart
-            key={account.name}
-            siteName={account.name}
-            daysSinceActive={account.daysSinceActive}
-          />
-        ))}
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-slate-400 text-sm">
+            아직 추천할 정리 항목이 없어요. Gmail 스캔을 실행해보세요.
+          </div>
+        ) : (
+          items.map((x) => (
+            <div
+              key={x.id}
+              className="flex items-center justify-between p-3 rounded-md border border-cyan-400/15 bg-slate-950/40"
+            >
+              <div>
+                <div className="font-semibold text-slate-100">{x.serviceName}</div>
+                <div className="text-xs text-slate-400">{x.label}</div>
+              </div>
+              <div className="text-xs text-cyan-200/90 font-mono">
+                {x.serviceDomain}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      <button className="w-full mt-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-medium transition-colors">
-        계정 정리하러 가기
-      </button>
+      <div className="mt-4 text-xs text-slate-500">
+        * MVP 기준: “오래된 흔적(메일 기준)”이 많은 계정을 우선 표시해요.
+      </div>
     </div>
   );
 }

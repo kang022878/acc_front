@@ -1,66 +1,44 @@
+// src/components/DonutChart.tsx
 interface DonutChartProps {
-  daysSinceActive: number;
-  siteName: string;
+  percent: number; // 0~100
+  size?: number;   // px
+  stroke?: number; // px
+  label?: string;
 }
 
-export default function DonutChart({ daysSinceActive, siteName }: DonutChartProps) {
-  const maxDays = 730; // 2 years = 730 days
-  const percentage = Math.min((daysSinceActive / maxDays) * 100, 100);
-  
-  // Calculate stroke dash array for the donut chart
-  const circumference = 2 * Math.PI * 45; // radius is 45
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  // Determine color based on how long it's been inactive
-  const getColor = () => {
-    if (daysSinceActive > 365) return '#ef4444'; // red for over a year
-    if (daysSinceActive > 180) return '#f59e0b'; // orange for over 6 months
-    return '#3b82f6'; // blue for less than 6 months
-  };
-
-  const color = getColor();
+export default function DonutChart({ percent, size = 92, stroke = 10, label }: DonutChartProps) {
+  const clamped = Math.max(0, Math.min(100, percent));
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (clamped / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-32 h-32">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-          {/* Background circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke="#1e293b"
-            strokeWidth="10"
-          />
-          {/* Progress circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke={color}
-            strokeWidth="10"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className="transition-all duration-1000 ease-out"
-            style={{
-              filter: `drop-shadow(0 0 8px ${color})`,
-            }}
-          />
-        </svg>
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-2xl font-bold" style={{ color }}>
-            {daysSinceActive}
-          </div>
-          <div className="text-xs text-slate-400">일</div>
-        </div>
-      </div>
-      <div className="mt-3 text-center">
-        <div className="font-bold text-lg">{siteName}</div>
-        <div className="text-xs text-slate-400">마지막 활동</div>
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="drop-shadow-[0_0_18px_rgba(34,211,238,0.18)]">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(34,211,238,0.18)"
+          strokeWidth={stroke}
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(34,211,238,0.95)"
+          strokeWidth={stroke}
+          fill="transparent"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference - dash}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-sm font-bold text-cyan-200">{clamped}%</div>
+        {label && <div className="text-[10px] text-slate-400">{label}</div>}
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ import CleanupSuggestions from '../components/CleanupSuggestions';
 import SecurityChatbot from '../components/SecurityChatbot';
 import { User } from 'lucide-react';
 import Rotating3DModel from '../components/Rotating3DModel';
+import type { CleanupItem, CategoryDonut } from "../lib/accountInsights";
+import DonutChart from '../components/DonutChart';
 
 interface DashboardProps {
   user: {
@@ -15,9 +17,23 @@ interface DashboardProps {
     profileImage: string | null;
   };
   accountCount: number;
+  cleanupTop2: CleanupItem[];
+  categoryDonuts: CategoryDonut[];
+  onRunScan: () => void;
+  scanLoading: boolean;
+  scanError: string;
 }
 
-export default function Dashboard({ user, accountCount }: DashboardProps) {
+export default function Dashboard({
+  user,
+  accountCount,
+  cleanupTop2,
+  categoryDonuts,
+  onRunScan,
+  scanLoading,
+  scanError,
+}: DashboardProps)
+ {
   const navigate = useNavigate();
 
   return (
@@ -143,13 +159,58 @@ export default function Dashboard({ user, accountCount }: DashboardProps) {
               </div>
 
               <AccountInfo accountCount={accountCount} onManageClick={() => navigate('/account-management')} />
+                <div className="bg-slate-900/50 border border-cyan-400/25 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-200 font-mono tracking-widest text-xs">SYNC</div>
+                      <div className="text-slate-200 font-semibold">Gmail 신호 재탐지</div>
+                      <div className="text-slate-400 text-xs">가입/영수증/인증 메일만 자동 탐지</div>
+                    </div>
+                    <button
+                      onClick={onRunScan}
+                      disabled={scanLoading}
+                      className="px-4 py-2 rounded-md border border-cyan-400/30 bg-slate-950/50
+                                hover:bg-slate-900/60 text-cyan-200 font-mono
+                                shadow-[0_0_25px_rgba(34,211,238,0.15)] disabled:opacity-60"
+                    >
+                      {scanLoading ? "SCANNING..." : "RUN SCAN"}
+                    </button>
+                  </div>
+                  {scanError && <div className="mt-2 text-xs text-red-400">{scanError}</div>}
+                </div>
               <WeeklyGoals />
             </div>
 
             {/* Middle Column */}
             <div className="space-y-6">
               <TermsAnalysisWidget onAnalyzeClick={() => navigate('/terms-analysis')} />
-              <CleanupSuggestions />
+                <div className="bg-slate-900/50 border border-cyan-400/25 rounded-lg p-6 backdrop-blur-sm
+                shadow-[0_0_40px_rgba(34,211,238,0.10)]">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold">📡 Account Signals</h3>
+                    <span className="text-xs font-mono text-cyan-200/80">CLASSIFIED</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {categoryDonuts.length === 0 ? (
+                      <div className="text-slate-400 text-sm">아직 신호가 없어요. RUN SCAN을 실행해보세요.</div>
+                    ) : (
+                      categoryDonuts.map((c) => (
+                        <div
+                          key={c.key}
+                          className="flex items-center justify-between p-3 rounded-md border border-cyan-400/15 bg-slate-950/40"
+                        >
+                          <div>
+                            <div className="font-semibold text-slate-100">{c.label}</div>
+                            <div className="text-xs text-slate-400">{c.count}개</div>
+                          </div>
+                          <DonutChart percent={c.percent} />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              <CleanupSuggestions items={cleanupTop2} total={accountCount} />
             </div>
 
             {/* Right Column */}
