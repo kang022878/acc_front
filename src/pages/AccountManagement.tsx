@@ -70,14 +70,15 @@ export default function AccountManagement({ user, onLogin, onRefresh }: AccountM
   
   if (!user) {
     return (
-      <>
+      <div className="min-h-screen bg-slate-950 text-slate-100">
         <Header />
         <RequireLogin
           onLogin={onLogin}
+          title="계정 정리는 로그인 후 이용 가능"
           message="계정 정리는 로그인 후 이용할 수 있어요."
           showLoginButton={false}
         />
-      </>
+      </div>
     );
   }
 
