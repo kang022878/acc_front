@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import AccountInfo from '../components/AccountInfo';
@@ -40,6 +40,7 @@ export default function Dashboard({
   onLogin,
 }: DashboardProps) {
   const navigate = useNavigate();
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -47,9 +48,13 @@ export default function Dashboard({
 
   return (
     <div className="bg-slate-950 text-slate-100">
-      <IntroScreen />
+      <IntroScreen
+        onDone={() => {
+          dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
 
-      <div className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+      <div ref={dashboardRef} className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
         <Header />
 
         <div className="container mx-auto px-6 py-8 relative">
