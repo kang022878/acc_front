@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 interface IntroScreenProps {
-  onDone: () => void;
+  onDone?: () => void;
 }
 
 export default function IntroScreen({ onDone }: IntroScreenProps) {
@@ -23,7 +23,9 @@ export default function IntroScreen({ onDone }: IntroScreenProps) {
       } else {
         fadeTimeoutId = window.setTimeout(() => {
           setFadeOut(true);
-          doneTimeoutId = window.setTimeout(onDone, 1200);
+          if (typeof onDone === "function") {
+            doneTimeoutId = window.setTimeout(onDone, 1200);
+          }
         }, 3000);
       }
     };
@@ -39,8 +41,8 @@ export default function IntroScreen({ onDone }: IntroScreenProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#050a1b] text-slate-100 transition-opacity duration-[1200ms] ${
-        fadeOut ? "opacity-0" : "opacity-100"
+      className={`relative min-h-screen w-full flex items-center justify-center bg-[#050a1b] text-slate-100 transition-opacity duration-[1200ms] ${
+        fadeOut ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
       <div className="relative w-full h-full overflow-hidden">

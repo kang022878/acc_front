@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import AccountInfo from '../components/AccountInfo';
@@ -9,6 +10,7 @@ import { User } from 'lucide-react';
 import Rotating3DModel from '../components/Rotating3DModel';
 import type { CleanupItem, CategoryDonut } from "../lib/accountInsights";
 import DonutChart from '../components/DonutChart';
+import IntroScreen from "../components/IntroScreen";
 
 interface DashboardProps {
   user: {
@@ -39,11 +41,18 @@ export default function Dashboard({
 }: DashboardProps) {
   const navigate = useNavigate();
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
-      <Header />
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
 
-      <div className="container mx-auto px-6 py-8 relative">
+  return (
+    <div className="bg-slate-950 text-slate-100">
+      <IntroScreen />
+
+      <div className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+        <Header />
+
+        <div className="container mx-auto px-6 py-8 relative">
         {/* Background effects */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
@@ -258,6 +267,7 @@ export default function Dashboard({
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
