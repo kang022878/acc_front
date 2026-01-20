@@ -41,6 +41,9 @@ export default function Dashboard({
 }: DashboardProps) {
   const navigate = useNavigate();
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const [showIntro, setShowIntro] = useState(() => {
+    return sessionStorage.getItem("acc_intro_seen") !== "1";
+  });
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -48,11 +51,15 @@ export default function Dashboard({
 
   return (
     <div className="bg-slate-950 text-slate-100">
-      <IntroScreen
-        onDone={() => {
-          dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
-        }}
-      />
+      {showIntro && (
+        <IntroScreen
+          onDone={() => {
+            sessionStorage.setItem("acc_intro_seen", "1");
+            setShowIntro(false);
+            dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      )}
 
       <div ref={dashboardRef} className="min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
         <Header />
