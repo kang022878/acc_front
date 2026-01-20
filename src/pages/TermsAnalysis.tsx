@@ -295,6 +295,12 @@ import Header from "../components/Header";
 import { Search, Clock } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import Spinner from "../components/Spinner";
+import RequireLogin from "../components/RequireLogin";
+
+interface TermsAnalysisProps {
+  user: { name: string; email: string; profileImage: string | null } | null;
+  onLogin: () => Promise<boolean>;
+}
 
 type HistoryItem = {
   id: string;
@@ -325,7 +331,20 @@ type AnalysisDetailResponse = {
   };
 };
 
-export default function TermsAnalysis() {
+export default function TermsAnalysis({ user, onLogin }: TermsAnalysisProps) {
+  if (!user) {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <Header />
+      <RequireLogin
+        onLogin={onLogin}
+        title="약관 분석은 로그인 후 이용 가능"
+        message="로그인하면 분석 기록 저장, 재조회, 결과 확인이 가능해요."
+      />
+    </div>
+  );
+}
+
   const navigate = useNavigate();
 
   // 기존 입력(너가 이미 만든 탭 버전이 있으면 그대로 두고, 아래 url만 유지해도 됨)
@@ -357,6 +376,7 @@ export default function TermsAnalysis() {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -376,6 +396,7 @@ type AnalyzeUrlResponse = {
 };
 
   const handleAnalyze = async () => {
+    if (!user) return;
     const input = url.trim();
     if (!input) return;
 
@@ -419,8 +440,15 @@ type AnalyzeUrlResponse = {
         },
       });
     } catch (e: any) {
-      alert(e?.message || "분석 결과를 불러오지 못했어요.");
-    }
+  const msg = e?.message || "";
+  if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
+    setHistoryError("로그인 후 이용 가능한 기능이에요.");
+  } else {
+    setHistoryError("분석 기록을 불러오지 못했어요.");
+  }
+  setHistory([]);
+}
+
   };
 
   return (

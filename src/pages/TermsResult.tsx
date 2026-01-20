@@ -1,6 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { ArrowLeft, Search } from "lucide-react";
+import RequireLogin from "../components/RequireLogin";
+
+interface TermsResultProps {
+  user: { name: string; email: string; profileImage: string | null } | null;
+  onLogin: () => Promise<boolean>;
+}
+
 
 type EvidenceItem = { flag: string; sentences: string[]; confidence: number };
 type QAItem = { question: string; answer: string };
@@ -31,7 +38,20 @@ function riskLevelUI(level: Analysis["riskLevel"]) {
   return { label: "LOW", cls: "bg-green-500/15 text-green-200 border-green-500/30" };
 }
 
-export default function TermsResult() {
+export default function TermsResult({ user, onLogin }: TermsResultProps) {
+  if (!user) {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <Header />
+      <RequireLogin
+        onLogin={onLogin}
+        title="약관 분석 결과는 로그인 후 확인 가능"
+        message="로그인하면 분석 결과가 저장되고 언제든 다시 확인할 수 있어요."
+      />
+    </div>
+  );
+}
+
   const location = useLocation();
   const navigate = useNavigate();
 

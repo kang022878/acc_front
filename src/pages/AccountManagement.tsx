@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
+import RequireLogin from "../components/RequireLogin";
 import AccountList from "../components/AccountList";
 import { Search, RefreshCw, ShieldAlert, Link2 } from "lucide-react";
 import { apiFetch, devLogin } from "../lib/api";
@@ -66,6 +67,18 @@ function sanitizeDomain(domain: string) {
 }
 
 export default function AccountManagement({ user, onLogin, onRefresh }: AccountManagementProps) {
+  
+  if (!user) {
+    return (
+      <>
+        <Header />
+        <RequireLogin
+          onLogin={onLogin}
+          message="계정 정리는 로그인 후 이용할 수 있어요."
+        />
+      </>
+    );
+  }
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
