@@ -8,6 +8,7 @@ import AccountManagement from "./pages/AccountManagement";
 import { apiFetch, clearToken, devLogin, startGoogleLogin, getToken, setToken } from "./lib/api";
 import type { Account } from "./lib/types";
 import { buildCategoryDonuts, buildCleanupTop2 } from "./lib/accountInsights";
+import IntroScreen from "./components/IntroScreen";
 
 type User = { name: string; email: string; profileImage: string | null };
 type AccountsListResponse = { total: number; accounts: Account[] };
@@ -20,6 +21,7 @@ export default function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
 
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -125,6 +127,7 @@ useEffect(() => {
   return (
     <Router>
       <div className="min-h-screen bg-slate-950">
+        {showIntro && <IntroScreen onDone={() => setShowIntro(false)} />}
         <Routes>
           <Route
             path="/"
