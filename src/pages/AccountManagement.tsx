@@ -75,6 +75,7 @@ export default function AccountManagement({ user, onLogin, onRefresh }: AccountM
         <RequireLogin
           onLogin={onLogin}
           message="계정 정리는 로그인 후 이용할 수 있어요."
+          showLoginButton={false}
         />
       </>
     );

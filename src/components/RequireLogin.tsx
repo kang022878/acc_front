@@ -4,12 +4,14 @@ interface RequireLoginProps {
   onLogin?: () => Promise<boolean>;
   title?: string;
   message?: string;
+  showLoginButton?: boolean;
 }
 
 export default function RequireLogin({
   onLogin,
   title = "로그인 후 이용 가능",
   message = "이 기능을 사용하려면 로그인이 필요해요.",
+  showLoginButton = true,
 }: RequireLoginProps) {
   const handleClick = () => {
     if (typeof onLogin !== "function") {
@@ -27,12 +29,14 @@ export default function RequireLogin({
         <div className="text-2xl font-bold mb-2">{title}</div>
         <div className="text-slate-300 mb-6">{message}</div>
 
-        <button
-          onClick={handleClick}
-          className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium"
-        >
-          로그인
-        </button>
+        {showLoginButton && (
+          <button
+            onClick={handleClick}
+            className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium"
+          >
+            로그인
+          </button>
+        )}
       </div>
     </div>
   );

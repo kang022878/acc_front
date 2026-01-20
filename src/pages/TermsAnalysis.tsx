@@ -340,6 +340,7 @@ export default function TermsAnalysis({ user, onLogin }: TermsAnalysisProps) {
         onLogin={onLogin}
         title="약관 분석은 로그인 후 이용 가능"
         message="로그인하면 분석 기록 저장, 재조회, 결과 확인이 가능해요."
+        showLoginButton={false}
       />
     </div>
   );
@@ -565,4 +566,3 @@ type AnalyzeUrlResponse = {
     </div>
   );
 }
-{/*test*/}
