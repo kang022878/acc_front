@@ -43,6 +43,7 @@ type GmailStatusResponse =
 interface AccountManagementProps {
   user: { name: string; email: string; profileImage: string | null } | null;
   onLogin: () => Promise<boolean>;
+  onRefresh: () => Promise<void>;
 }
 
 /** 카테고리 표시명 */
@@ -64,7 +65,8 @@ function sanitizeDomain(domain: string) {
   return domain.replace(/[<>"]/g, "").trim();
 }
 
-export default function AccountManagement({ user, onLogin }: AccountManagementProps) {
+export default function AccountManagement({ user, onLogin, onRefresh }: AccountManagementProps) {
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
 
@@ -88,7 +90,7 @@ export default function AccountManagement({ user, onLogin }: AccountManagementPr
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState("");
 
-  const fetchAccounts = async () => {
+  const fetchLocalAccounts = async () => {
     setLoading(true);
     setError("");
     try {
@@ -105,7 +107,7 @@ export default function AccountManagement({ user, onLogin }: AccountManagementPr
   };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchLocalAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -146,23 +148,27 @@ export default function AccountManagement({ user, onLogin }: AccountManagementPr
 
   /** RUN SCAN */
     const runScan = async () => {
-      if (!user) {
-        setScanError("로그인이 필요해요. 먼저 로그인해주세요.");
-        return;
-      }
+  if (!user) {
+    setScanError("로그인이 필요해요. 먼저 로그인해주세요.");
+    return;
+  }
 
-      setScanLoading(true);
-      setScanError("");
-      try {
-        await apiFetch("/api/gmail/scan", { method: "POST" });
-        await fetchAccounts();
-      } catch (e: any) {
-        setScanError(e?.message || "스캔 실패");
-      } finally {
-        setScanLoading(false);
-      }
-    };
+  setScanLoading(true);
+  setScanError("");
+  try {
+    await apiFetch("/api/gmail/scan", { method: "POST" });
 
+    // ✅ 1) 현재 페이지 목록 갱신
+    await fetchLocalAccounts();
+
+    // ✅ 2) 대시보드 데이터 갱신 (App.tsx accounts 업데이트)
+    await onRefresh();
+  } catch (e: any) {
+    setScanError(e?.message || "스캔 실패");
+  } finally {
+    setScanLoading(false);
+  }
+};
 
   //   const fetchAccounts = async () => {
   //   setScanLoading(true);      // 로딩 표시 재사용
@@ -189,7 +195,7 @@ export default function AccountManagement({ user, onLogin }: AccountManagementPr
 
   /** Gmail 연결되어 있으면 자동 스캔(원치 않으면 삭제 가능) */
   useEffect(() => {
-    if (gmailConnected) fetchAccounts();
+    if (gmailConnected) fetchLocalAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gmailConnected]);
 
