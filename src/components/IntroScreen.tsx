@@ -26,7 +26,7 @@ export default function IntroScreen({ onDone }: IntroScreenProps) {
           if (typeof onDone === "function") {
             doneTimeoutId = window.setTimeout(onDone, 1200);
           }
-        }, 3000);
+        }, 1600);
       }
     };
 
@@ -41,7 +41,7 @@ export default function IntroScreen({ onDone }: IntroScreenProps) {
 
   return (
     <div
-      className={`relative min-h-screen w-full flex items-center justify-center bg-[#050a1b] text-slate-100 transition-opacity duration-[1200ms] ${
+      className={`relative min-h-screen w-full flex items-center justify-center bg-[#050a1b] text-slate-100 transition-opacity duration-[2000ms] ${
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
