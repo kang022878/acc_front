@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, Send, User, Loader2 } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiFetch, devLoginToken, getToken } from "../lib/api";
 
 interface Message {
   id: number;
@@ -22,6 +22,7 @@ export default function SecurityChatbot() {
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [guestToken, setGuestToken] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -31,6 +32,14 @@ export default function SecurityChatbot() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const sendChat = async (historyForApi: { role: string; content: string }[], tokenOverride?: string) => {
+    return apiFetch<ChatApiResponse>("/api/security-chat", {
+      method: "POST",
+      body: JSON.stringify({ messages: historyForApi }),
+      headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+    });
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -54,10 +63,26 @@ export default function SecurityChatbot() {
         content: m.text,
       }));
 
-      const res = await apiFetch<ChatApiResponse>("/api/security-chat", {
-        method: "POST",
-        body: JSON.stringify({ messages: historyForApi }),
-      });
+      let res: ChatApiResponse;
+      try {
+        res = await sendChat(historyForApi, guestToken || undefined);
+      } catch (err: any) {
+        const errText = String(err?.message || "");
+        const isUnauthorized =
+          errText.includes("401") || errText.toLowerCase().includes("unauthorized");
+
+        if (import.meta.env.DEV && !getToken() && isUnauthorized) {
+          const token = await devLoginToken("guest@acc.local", "게스트");
+          if (token) {
+            setGuestToken(token);
+            res = await sendChat(historyForApi, token);
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
 
       const botMessage: Message = {
         id: Date.now() + 1,

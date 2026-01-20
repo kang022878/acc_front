@@ -41,6 +41,22 @@ export async function devLogin(email: string, name: string) {
   return data;
 }
 
+export async function devLoginToken(email: string, name: string) {
+  const res = await fetch(`${API_BASE}/api/auth/dev-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`dev-login failed: ${text}`);
+  }
+
+  const data = await res.json();
+  return data?.token as string | undefined;
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
