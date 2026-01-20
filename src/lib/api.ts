@@ -1,6 +1,17 @@
 // src/lib/api.ts
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
+export async function startGoogleLogin() {
+  const res = await fetch(`${API_BASE}/api/auth/google/auth-url`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`google auth-url failed: ${text}`);
+  }
+  const data = await res.json();
+  if (!data?.authUrl) throw new Error("Missing authUrl");
+  window.location.href = data.authUrl; // 구글로 이동
+}
+
 export function getToken() {
   return localStorage.getItem("acc_token");
 }

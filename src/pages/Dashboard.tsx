@@ -155,14 +155,8 @@ export default function Dashboard({
                         </div>
 
                         <button
-                          onClick={async () => {
-                            const ok = await onLogin();                 // ✅ 토큰 발급
-                            if (!ok) {
-                              navigate("/");
-                              return;
-                            }
-                              navigate("/account-management"); // ✅ 이후 이동
-                          }}
+                          onClick={() => { void onLogin(); }}
+
                           className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-blue-500/30 rounded text-sm transition-colors"
                         >
                           로그인

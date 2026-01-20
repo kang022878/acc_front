@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import TermsAnalysis from "./pages/TermsAnalysis";
 import TermsResult from "./pages/TermsResult";
 import AccountManagement from "./pages/AccountManagement";
-import { apiFetch, clearToken, devLogin, getToken } from "./lib/api";
+import { apiFetch, clearToken, devLogin, startGoogleLogin, getToken, setToken } from "./lib/api";
 import type { Account } from "./lib/types";
 import { buildCategoryDonuts, buildCleanupTop2 } from "./lib/accountInsights";
 
@@ -25,42 +25,77 @@ export default function App() {
   const [scanError, setScanError] = useState("");
 
   // ✅ 앱 시작 시 토큰 강제 삭제 (원하는 “재시작하면 로그아웃”)
-  useEffect(() => {
-    clearToken();
-    setAccounts([]);
-    setAccountsError("");
-    setScanError("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const fetchAccounts = async () => {
-    setAccountsLoading(true);
-    setAccountsError("");
+  setAccountsLoading(true);
+  setAccountsError("");
+  try {
+    const res = await apiFetch<AccountsListResponse>("/api/accounts?status=active&sort=-createdAt");
+    setAccounts(res.accounts || []);
+  } catch (e: any) {
+    setAccountsError(e?.message || "계정 목록 조회 실패");
+    setAccounts([]);
+  } finally {
+    setAccountsLoading(false);
+  }
+};
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const tokenFromUrl = params.get("token");
+
+  if (tokenFromUrl) {
+    // ✅ token을 URL로 받았으면 저장
+    localStorage.setItem("acc_token", tokenFromUrl);
+
+    // ✅ URL에서 token 제거
+    params.delete("token");
+    const next = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+    window.history.replaceState({}, "", next);
+  }
+
+  const token = getToken(); // localStorage에서 읽기
+  if (!token) return;       // 토큰 없으면 그냥 비로그인
+
+  // ✅ 토큰이 있으면 항상 유저 복구 시도
+  (async () => {
     try {
-      const res = await apiFetch<AccountsListResponse>("/api/accounts?status=active&sort=-createdAt");
-      setAccounts(res.accounts || []);
-    } catch (e: any) {
-      setAccountsError(e?.message || "계정 목록 조회 실패");
+      const me = await apiFetch<any>("/api/auth/me");
+      setUser({ name: me.name, email: me.email, profileImage: null });
+      await fetchAccounts();
+    } catch (e) {
+      console.error(e);
+      clearToken();
+      setUser(null);
       setAccounts([]);
-    } finally {
-      setAccountsLoading(false);
     }
-  };
+  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-  // ✅ 로그인: “취소” 여부를 호출자에게 알려주기 위해 boolean 반환
   const onLogin = async (): Promise<boolean> => {
-    const email = window.prompt("이메일을 입력하세요")?.trim();
-    if (!email) return false; // ✅ 취소/빈값이면 false
+  // ✅ 배포(PROD)에서는 구글 로그인으로 리다이렉트
+  if (import.meta.env.PROD) {
+    try {
+      await startGoogleLogin();
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+    return false; // 사실상 여기 도달 안 함(리다이렉트)
+  }
 
-    const name = window.prompt("이름을 입력하세요", "사용자")?.trim();
-    if (!name) return false;
+  // ✅ 개발(DEV)에서는 기존 dev-login 유지
+  const email = window.prompt("이메일을 입력하세요")?.trim();
+  if (!email) return false;
 
-    await devLogin(email, name); // acc_token 저장됨
-    setUser({ name, email, profileImage: null });
+  const name = window.prompt("이름을 입력하세요", "사용자")?.trim();
+  if (!name) return false;
 
-    await fetchAccounts();
-    return true;
-  };
+  await devLogin(email, name);
+  setUser({ name, email, profileImage: null });
+  await fetchAccounts();
+  return true;
+};
 
   const onLogout = () => {
     clearToken();
