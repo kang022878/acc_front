@@ -142,7 +142,7 @@ useEffect(() => {
               />
             }
           />
-          <Route path="/terms-analysis" element={<TermsAnalysis />} />
+          <Route path="/terms-analysis" element={<TermsAnalysis user={user} onLogin={onLogin} />} />
           <Route path="/terms-result" element={<TermsResult />} />
           <Route path="/account-management" element={<AccountManagement user={user} onLogin={onLogin} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
