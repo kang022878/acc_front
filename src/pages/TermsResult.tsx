@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { ArrowLeft, Search } from "lucide-react";
 import RequireLogin from "../components/RequireLogin";
+import { getToken } from "../lib/api";
 
 interface TermsResultProps {
   user: { name: string; email: string; profileImage: string | null } | null;
@@ -39,7 +40,9 @@ function riskLevelUI(level: Analysis["riskLevel"]) {
 }
 
 export default function TermsResult({ user, onLogin }: TermsResultProps) {
-  if (!user) {
+  const hasToken = Boolean(getToken());
+
+  if (!user && !hasToken) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Header />
