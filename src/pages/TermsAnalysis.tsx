@@ -293,7 +293,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { Search, Clock } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiFetch, getToken } from "../lib/api";
 import Spinner from "../components/Spinner";
 import RequireLogin from "../components/RequireLogin";
 
@@ -332,7 +332,9 @@ type AnalysisDetailResponse = {
 };
 
 export default function TermsAnalysis({ user, onLogin }: TermsAnalysisProps) {
-  if (!user) {
+  const hasToken = Boolean(getToken());
+
+  if (!user && !hasToken) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Header />
